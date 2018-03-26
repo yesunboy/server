@@ -8923,19 +8923,36 @@ query_expression_body:
             SELECT_LEX *sel= $1;
             if ($3)
             {
-              if (!$1->is_set_query_expr_tail)
+              if ($1->next_select())
+              {
+                SELECT_LEX_UNIT *unit= $1->master_unit();
+                if (!unit)
+                  unit= Lex->create_unit($1);
+                if (!unit)
+                  YYABORT;
+                if (!unit->fake_select_lex->is_set_query_expr_tail)
+                  $3->set_to(unit->fake_select_lex);
+                else
+                {
+                  SELECT_LEX *sel= Lex->wrap_unit_into_derived(unit);
+                  if (!sel)
+                    YYABORT;
+                  $3->set_to(sel);
+                }
+              }
+              else if (!$1->is_set_query_expr_tail)
                 $3->set_to($1);
               else
               {
-                SELECT_LEX_UNIT *unit= Lex->create_unit($1);
+                SELECT_LEX_UNIT *unit= $1->master_unit();
+                if (!unit)
+                  unit= Lex->create_unit($1);
                 if (!unit)
                   YYABORT;
-                if (unit->add_fake_select_lex(thd))
-                  YYABORT;
-                $3->set_to(unit->fake_select_lex);
                 sel= Lex->wrap_unit_into_derived(unit);
                 if (!sel)
                   YYABORT;
+                $3->set_to(sel);
               }
             }
             $$= Lex->create_unit(sel);
