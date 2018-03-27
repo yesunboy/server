@@ -12052,9 +12052,12 @@ opt_order_clause:
 
 order_clause:
           ORDER_SYM BY
+          {  
+            thd->where= "ORDER clause";
+          }
           order_list
           {
-            $$= $3;
+            $$= $4;
           }
          ;
 
