@@ -1053,6 +1053,21 @@ public:
   LEX_CSTRING name; /* name for named prepared statements */
   LEX *lex;                                     // parse tree descriptor
   /*
+    LEX which represents current statement (conventional, SP or PS)
+
+    For example during view parsing THD::lex will point to the views LEX and
+    THD::stmt_lex will point to LEX of the statement where the view will be
+    included
+
+    Currently it is used to have always correct select numbering inside
+    statement (LEX::current_select_number) without storing and restoring a
+    global counter which was THD::select_number.
+
+    TODO: make some unified statement representation (now SP has different)
+    to store such data like LEX::current_select_number.
+  */
+  LEX *stmt_lex;
+  /*
     Points to the query associated with this statement. It's const, but
     we need to declare it char * because all table handlers are written
     in C and need to point to it.
@@ -2874,7 +2889,6 @@ public:
   uint	     tmp_table, global_disable_checkpoint;
   uint	     server_status,open_options;
   enum enum_thread_type system_thread;
-  uint       select_number;             //number of select (used for EXPLAIN)
   /*
     Current or next transaction isolation level.
     When a connection is established, the value is taken from
@@ -4574,10 +4588,11 @@ public:
   /**
     Switch to a sublex, to parse a substatement or an expression.
   */
-  void set_local_lex(sp_lex_local *sublex)
+  void set_local_lex(sp_lex_local *sublex, LEX *stmtlex)
   {
     DBUG_ASSERT(lex->sphead);
     lex= sublex;
+    stmt_lex= stmtlex;
     /* Reset part of parser state which needs this. */
     m_parser_state->m_yacc.reset_before_substatement();
   }
@@ -4593,7 +4608,7 @@ public:
 
     See also sp_head::merge_lex().
   */
-  bool restore_from_local_lex_to_old_lex(LEX *oldlex);
+  bool restore_from_local_lex_to_old_lex(LEX *oldlex, LEX *oldstmtlex);
 
   inline void prepare_logs_for_admin_command()
   {
@@ -5947,14 +5962,8 @@ public:
 
 inline bool add_item_to_list(THD *thd, Item *item)
 {
-  DBUG_ENTER("add_item_to_list");
-
-  DBUG_PRINT("XXX", ("Add '%s' -> cur sel: %p (%d)", item->name.str,
-                     thd->lex->current_select,
-                     (thd->lex->current_select ?
-                      thd->lex->current_select->select_number : 0)));
   bool res= thd->lex->current_select->add_item_to_list(thd, item);
-  DBUG_RETURN(res);
+  return res;
 }
 
 inline bool add_value_to_list(THD *thd, Item *value)

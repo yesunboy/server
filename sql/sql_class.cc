@@ -1368,12 +1368,13 @@ void THD::init(void)
 }
 
 
-bool THD::restore_from_local_lex_to_old_lex(LEX *oldlex)
+bool THD::restore_from_local_lex_to_old_lex(LEX *oldlex, LEX *oldstmtlex)
 {
   DBUG_ASSERT(lex->sphead);
   if (lex->sphead->merge_lex(this, oldlex, lex))
     return true;
   lex= oldlex;
+  stmt_lex= oldstmtlex;
   return false;
 }
 
@@ -3665,6 +3666,7 @@ Statement::Statement(LEX *lex_arg, MEM_ROOT *mem_root_arg,
   id(id_arg),
   mark_used_columns(MARK_COLUMNS_READ),
   lex(lex_arg),
+  stmt_lex(lex_arg),
   db(NULL),
   db_length(0)
 {
@@ -3682,7 +3684,7 @@ void Statement::set_statement(Statement *stmt)
 {
   id=             stmt->id;
   mark_used_columns=   stmt->mark_used_columns;
-  lex=            stmt->lex;
+  stmt_lex= lex=  stmt->lex;
   query_string=   stmt->query_string;
 }
 

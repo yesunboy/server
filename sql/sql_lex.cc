@@ -676,13 +676,15 @@ void LEX::start(THD *thd_arg)
   DBUG_ENTER("LEX::start");
 
   thd= unit.thd= thd_arg;
-  
+  DBUG_PRINT("info", ("Lex %p stmt_lex: %p", thd->lex, thd->stmt_lex));
+
   DBUG_ASSERT(!explain);
 
   context_stack.empty();
   //empty select_stack
   select_stack_top= 0;
   unit.init_query();
+  current_select_number= 0;
   builtin_select.set_linkage(UNSPECIFIED_TYPE);
   builtin_select.distinct= TRUE;
   /* 'parent_lex' is used in init_query() so it must be before it. */
@@ -5096,9 +5098,10 @@ SELECT_LEX *LEX::alloc_select(bool select)
   DBUG_ENTER("LEX::alloc_select");
   if (!(select_lex= new (thd->mem_root) SELECT_LEX()))
     DBUG_RETURN(NULL);
-  DBUG_PRINT("info", ("Allocate select %p #%u",
-                      select_lex, thd->select_number));
-  select_lex->select_number= ++thd->select_number;
+  DBUG_PRINT("info", ("Allocate select: %p #%u  statement lex: %p",
+                      select_lex, thd->stmt_lex->current_select_number,
+                      thd->stmt_lex));
+  select_lex->select_number= ++thd->stmt_lex->current_select_number;
   select_lex->parent_lex= this; /* Used in init_query. */
   select_lex->init_query();
   if (select)
@@ -7837,7 +7840,8 @@ void st_select_lex::add_statistics(SELECT_LEX_UNIT *unit)
 bool LEX::main_select_push()
 {
   DBUG_ENTER("LEX::main_select_push");
-  thd->select_number= 1;
+  current_select_number= 1;
+  builtin_select.select_number= 1;
   if (push_select(&builtin_select))
     DBUG_RETURN(TRUE);
   DBUG_RETURN(FALSE);

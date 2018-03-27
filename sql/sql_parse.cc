@@ -7459,7 +7459,6 @@ void THD::reset_for_next_command(bool do_clear_error)
     clear_error(1);
 
   thd->free_list= 0;
-  thd->select_number= 0;
   /*
     Those two lines below are theoretically unneeded as
     THD::cleanup_after_query() should take care of this already.
@@ -7576,7 +7575,7 @@ mysql_new_select(LEX *lex, bool move_down, SELECT_LEX *select_lex)
   {
     if (!(select_lex= new (thd->mem_root) SELECT_LEX()))
       DBUG_RETURN(1);
-    select_lex->select_number= ++thd->select_number;
+    select_lex->select_number= ++thd->stmt_lex->current_select_number;
     select_lex->parent_lex= lex; /* Used in init_query. */
     select_lex->init_query();
     select_lex->init_select();

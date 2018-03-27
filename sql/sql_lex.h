@@ -888,7 +888,13 @@ public:
   Item *cond_pushed_into_having; /* condition pushed into the select's HAVING */
   /* Saved values of the WHERE and HAVING clauses*/
   Item::cond_result cond_value, having_value;
-  /* point on lex in which it was created, used in view subquery detection */
+  /*
+    Point to the LEX in which it was created, used in view subquery detection.
+
+    TODO: make also st_select_lex::parent_stmt_lex (see THD::stmt_lex)
+    and use st_select_lex::parent_lex & st_select_lex::parent_stmt_lex
+    instead of global (from THD) references where it is possible.
+  */
   LEX *parent_lex;
   enum olap_type olap;
   /* FROM clause - points to the beginning of the TABLE_LIST::next_local list. */
@@ -2741,7 +2747,7 @@ struct LEX: public Query_tables_list
   DYNAMIC_ARRAY plugins;
   plugin_ref plugins_static_buffer[INITIAL_LEX_PLUGIN_LIST_SIZE];
 
-  uint number_of_selects; // valid only for view
+  uint current_select_number; // valid for statment LEX (not view)
 
   /** Start of 'ON table', in trigger statements.  */
   const char* raw_trg_on_table_name_begin;

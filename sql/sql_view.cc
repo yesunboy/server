@@ -1196,8 +1196,6 @@ bool mysql_make_view(THD *thd, TABLE_SHARE *share, TABLE_LIST *table,
     */
     mysql_derived_reinit(thd, NULL, table);
 
-    thd->select_number+= table->view->number_of_selects;
-
     DEBUG_SYNC(thd, "after_cached_view_opened");
     DBUG_RETURN(0);
   }
@@ -1388,9 +1386,6 @@ bool mysql_make_view(THD *thd, TABLE_SHARE *share, TABLE_LIST *table,
 
     view_select= lex->first_select_lex();
     //view_select->select_number= ++thd->select_number;
-
-    lex->number_of_selects=
-      (thd->select_number - view_select->select_number) + 1;
 
     /* Restore environment. */
 

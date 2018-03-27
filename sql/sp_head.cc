@@ -558,7 +558,7 @@ sp_head::sp_head(const Sp_handler *sph)
    m_defstr(null_clex_str),
    m_sp_cache_version(0),
    m_creation_ctx(0),
-   unsafe_flags(0), m_select_number(1),
+   unsafe_flags(0),
    m_created(0),
    m_modified(0),
    m_recursion_level(0),
@@ -580,6 +580,7 @@ sp_head::sp_head(const Sp_handler *sph)
   m_backpatch_goto.empty();
   m_cont_backpatch.empty();
   m_lex.empty();
+  m_stmt_lex.empty();
   my_hash_init(&m_sptabs, system_charset_info, 0, 0, 0, sp_table_key, 0, 0);
   my_hash_init(&m_sroutines, system_charset_info, 0, 0, 0, sp_sroutine_key,
                0, 0);
@@ -701,6 +702,7 @@ sp_head::~sp_head()
     THD::lex. It is safe to not update LEX::ptr because further query
     string parsing and execution will be stopped anyway.
   */
+  DBUG_ASSERT(m_lex.elements == m_stmt_lex.elements);
   while ((lex= (LEX *)m_lex.pop()))
   {
     THD *thd= lex->thd;
@@ -708,6 +710,7 @@ sp_head::~sp_head()
     lex_end(thd->lex);
     delete thd->lex;
     thd->lex= lex;
+    thd->stmt_lex= m_stmt_lex.pop();
   }
 
   my_hash_free(&m_sptabs);
@@ -1002,7 +1005,7 @@ sp_head::execute(THD *thd, bool merge_da_on_success)
               backup_arena;
   query_id_t old_query_id;
   TABLE *old_derived_tables;
-  LEX *old_lex;
+  LEX *old_lex, *old_stmt_lex;
   Item_change_list old_change_list;
   String old_packet;
   uint old_server_status;
@@ -1105,6 +1108,7 @@ sp_head::execute(THD *thd, bool merge_da_on_success)
     do it in each instruction
   */
   old_lex= thd->lex;
+  old_stmt_lex= thd->stmt_lex;
   /*
     We should also save Item tree change list to avoid rollback something
     too early in the calling query.
@@ -1251,6 +1255,7 @@ sp_head::execute(THD *thd, bool merge_da_on_success)
   DBUG_ASSERT(thd->change_list.is_empty());
   old_change_list.move_elements_to(&thd->change_list);
   thd->lex= old_lex;
+  thd->stmt_lex= old_stmt_lex;
   thd->set_query_id(old_query_id);
   DBUG_ASSERT(!thd->derived_tables);
   thd->derived_tables= old_derived_tables;
@@ -2041,26 +2046,8 @@ sp_head::execute_procedure(THD *thd, List<Item> *args)
 
   if (!err_status)
   {
-    /*
-      Normally the counter is not reset between parsing and first execution,
-      but it is possible in case of error to have parsing on one CALL and
-      first execution (where VIEW will be parsed and added). So we store the
-      counter after parsing and restore it before execution just to avoid
-      repeating SELECT numbers.
-    */
-    thd->select_number= m_select_number;
-
     err_status= execute(thd, TRUE);
     DBUG_PRINT("info", ("execute returned %d", (int) err_status));
-    /*
-      This execution of the SP was aborted with an error (e.g. "Table not
-      found").  However it might still have consumed some numbers from the
-      thd->select_number counter.  The next sp->exec() call must not use the
-      consumed numbers, so we remember the first free number (We know that
-      nobody will use it as this execution has stopped with an error).
-    */
-    if (err_status)
-      set_select_number(thd->select_number);
   }
 
   if (save_log_general)
@@ -2161,10 +2148,11 @@ sp_head::reset_lex(THD *thd, sp_lex_local *sublex)
 {
   DBUG_ENTER("sp_head::reset_lex");
   LEX *oldlex= thd->lex;
+  LEX *oldstmtlex= thd->stmt_lex;
 
-  thd->set_local_lex(sublex);
+  thd->set_local_lex(sublex, sublex);
 
-  DBUG_RETURN(m_lex.push_front(oldlex));
+  DBUG_RETURN(m_lex.push_front(oldlex) || m_stmt_lex.push_front(oldstmtlex));
 }
 
 
@@ -3032,7 +3020,7 @@ sp_lex_keeper::reset_lex_and_exec_core(THD *thd, uint *nextp,
     We should not save old value since it is saved/restored in
     sp_head::execute() when we are entering/leaving routine.
   */
-  thd->lex= m_lex;
+  thd->lex= thd->stmt_lex= m_lex;
 
   thd->set_query_id(next_query_id());
 

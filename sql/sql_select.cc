@@ -1082,6 +1082,7 @@ err:
 
 void JOIN::build_explain()
 {
+  DBUG_ENTER("JOIN::build_explain");
   create_explain_query_if_not_exists(thd->lex, thd->mem_root);
   have_query_plan= QEP_AVAILABLE;
   save_explain_data(thd->lex->explain, false /* can overwrite */,
@@ -1105,6 +1106,7 @@ void JOIN::build_explain()
                          get_using_temporary_read_tracker();
     }
   }
+  DBUG_VOID_RETURN;
 }
 
 int JOIN::optimize()
@@ -3285,6 +3287,26 @@ void JOIN::save_explain_data(Explain_query *output, bool can_overwrite,
                              bool need_tmp_table, bool need_order, 
                              bool distinct)
 {
+  DBUG_ENTER("JOIN::save_explain_data");
+  DBUG_PRINT("enter", ("Save explain Select_lex: %u (%p)  parent lex: %p  stmt_lex: %p  present select: %u (%p)",
+                        select_lex->select_number, select_lex,
+                        select_lex->parent_lex, thd->stmt_lex,
+                        (output->get_select(select_lex->select_number) ?
+                         select_lex->select_number : 0),
+                        (output->get_select(select_lex->select_number) ?
+                         output->get_select(select_lex->select_number)
+                         ->select_lex : NULL)));
+  /*
+    If there is SELECT in this statemet with the same number it must be the
+    same SELECT
+  */
+  DBUG_ASSERT(select_lex->select_number == UINT_MAX ||
+              select_lex->select_number == INT_MAX ||
+              !output ||
+              !output->get_select(select_lex->select_number) ||
+              output->get_select(select_lex->select_number)->select_lex ==
+                select_lex);
+
   if (select_lex->select_number != UINT_MAX && 
       select_lex->select_number != INT_MAX /* this is not a UNION's "fake select */ && 
       have_query_plan != JOIN::QEP_NOT_PRESENT_YET && 
@@ -3302,7 +3324,7 @@ void JOIN::save_explain_data(Explain_query *output, bool can_overwrite,
     }
     save_explain_data_intern(thd->lex->explain, need_tmp_table, need_order,
                              distinct, message);
-    return;
+    DBUG_VOID_RETURN;
   }
   
   /*
@@ -3327,6 +3349,7 @@ void JOIN::save_explain_data(Explain_query *output, bool can_overwrite,
       }
     }
   }
+  DBUG_VOID_RETURN;
 }
 
 
@@ -24978,8 +25001,9 @@ int JOIN::save_explain_data_intern(Explain_query *output,
   JOIN *join= this; /* Legacy: this code used to be a non-member function */
   int cur_error= 0;
   DBUG_ENTER("JOIN::save_explain_data_intern");
-  DBUG_PRINT("info", ("Select 0x%lx, type %s, message %s",
-		      (ulong)join->select_lex, join->select_lex->type,
+  DBUG_PRINT("info", ("Select %p (%u), type %s, message %s",
+		      join->select_lex,  join->select_lex->select_number,
+                      join->select_lex->type,
 		      message ? message : "NULL"));
   DBUG_ASSERT(have_query_plan == QEP_AVAILABLE);
   /* fake_select_lex is created/printed by Explain_union */
@@ -24996,6 +25020,11 @@ int JOIN::save_explain_data_intern(Explain_query *output,
   {
     explain= new (output->mem_root) Explain_select(output->mem_root, 
                                                    thd->lex->analyze_stmt);
+    if (!explain)
+      DBUG_RETURN(1); // EoM
+#ifndef DBUG_OFF
+    explain->select_lex= select_lex;
+#endif
     join->select_lex->set_explain_type(true);
 
     explain->select_id= join->select_lex->select_number;
