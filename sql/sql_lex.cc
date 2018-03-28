@@ -785,6 +785,9 @@ void LEX::start(THD *thd_arg)
   next_is_main= FALSE;
   next_is_down= FALSE;
 
+  wild= 0;
+  exchange= 0;
+
   DBUG_VOID_RETURN;
 }
 
@@ -1363,6 +1366,14 @@ int MYSQLlex(YYSTYPE *yylval, THD *thd)
       return WITH;
     }
     break;
+  case PARTITION_SYM:
+  case UNION_SYM:
+    if (thd->lex->current_select && 
+        thd->lex->current_select->parsing_place == BEFORE_OPT_FIELD_LIST)
+    {
+      thd->lex->current_select->parsing_place= NO_MATTER;
+    }
+    break;
   case left_paren:
     if (!thd->lex->current_select || 
         thd->lex->current_select->parsing_place != BEFORE_OPT_FIELD_LIST)
@@ -1382,6 +1393,7 @@ int MYSQLlex(YYSTYPE *yylval, THD *thd)
     else
       return left_paren;
     break;
+   
   default:
     break;
   }

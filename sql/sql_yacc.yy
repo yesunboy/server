@@ -8738,7 +8738,7 @@ query_specification:
             if (!(sel= Lex->alloc_select(TRUE)) ||
                   Lex->push_select(sel))
               MYSQL_YYABORT;
-            mysql_init_select(Lex);
+            sel->init_select();
             sel->braces= FALSE;
           }
           select_options
