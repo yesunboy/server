@@ -187,10 +187,10 @@ a
 3
 show status like "Qcache_hits";
 Variable_name	Value
-Qcache_hits	4
+Qcache_hits	3
 show status like "Qcache_queries_in_cache";
 Variable_name	Value
-Qcache_queries_in_cache	1
+Qcache_queries_in_cache	0
 set query_cache_type=on;
 reset query cache;
 show status like "Qcache_queries_in_cache";
@@ -263,7 +263,7 @@ insert into t2 select * from t1;
 insert into t1 select * from t2;
 show status like "Qcache_hits";
 Variable_name	Value
-Qcache_hits	4
+Qcache_hits	3
 show status like "Qcache_lowmem_prunes";
 Variable_name	Value
 Qcache_lowmem_prunes	0
@@ -273,7 +273,7 @@ select a as a3, a as a4 from t1;
 select a as a1, a as a2 from t1;
 show status like "Qcache_hits";
 Variable_name	Value
-Qcache_hits	4
+Qcache_hits	3
 show status like "Qcache_queries_in_cache";
 Variable_name	Value
 Qcache_queries_in_cache	2
@@ -334,7 +334,7 @@ Variable_name	Value
 Qcache_queries_in_cache	2
 show status like "Qcache_hits";
 Variable_name	Value
-Qcache_hits	4
+Qcache_hits	3
 drop table t1;
 create database if not exists mysqltest;
 create table mysqltest.t1 (i int not null);
@@ -360,7 +360,7 @@ Variable_name	Value
 Qcache_queries_in_cache	2
 show status like "Qcache_hits";
 Variable_name	Value
-Qcache_hits	6
+Qcache_hits	5
 drop database mysqltest;
 drop table t1;
 create table t1 (i int not null);
@@ -374,7 +374,7 @@ FOUND_ROWS()
 4
 show status like "Qcache_hits";
 Variable_name	Value
-Qcache_hits	6
+Qcache_hits	5
 show status like "Qcache_queries_in_cache";
 Variable_name	Value
 Qcache_queries_in_cache	1
@@ -386,7 +386,7 @@ FOUND_ROWS()
 1
 show status like "Qcache_hits";
 Variable_name	Value
-Qcache_hits	6
+Qcache_hits	5
 show status like "Qcache_queries_in_cache";
 Variable_name	Value
 Qcache_queries_in_cache	2
@@ -399,7 +399,7 @@ FOUND_ROWS()
 4
 show status like "Qcache_hits";
 Variable_name	Value
-Qcache_hits	7
+Qcache_hits	6
 show status like "Qcache_queries_in_cache";
 Variable_name	Value
 Qcache_queries_in_cache	2
@@ -411,7 +411,7 @@ FOUND_ROWS()
 1
 show status like "Qcache_hits";
 Variable_name	Value
-Qcache_hits	8
+Qcache_hits	7
 show status like "Qcache_queries_in_cache";
 Variable_name	Value
 Qcache_queries_in_cache	2
@@ -482,7 +482,7 @@ a
 3
 show status like "Qcache_hits";
 Variable_name	Value
-Qcache_hits	11
+Qcache_hits	10
 show status like "Qcache_queries_in_cache";
 Variable_name	Value
 Qcache_queries_in_cache	2
@@ -499,7 +499,7 @@ a
 3
 show status like "Qcache_hits";
 Variable_name	Value
-Qcache_hits	12
+Qcache_hits	11
 show status like "Qcache_queries_in_cache";
 Variable_name	Value
 Qcache_queries_in_cache	2
@@ -847,13 +847,6 @@ select '1' || '3' from t1;
 1
 1
 1
-set SQL_MODE=oracle;
-select '1' || '3' from t1;
-'1' || '3'
-13
-13
-13
-13
 set SQL_MODE=default;
 drop table t1;
 create table t1 (a varchar(20), b int);
@@ -876,7 +869,7 @@ Variable_name	Value
 Qcache_queries_in_cache	0
 show status like "Qcache_inserts";
 Variable_name	Value
-Qcache_inserts	19
+Qcache_inserts	18
 show status like "Qcache_hits";
 Variable_name	Value
 Qcache_hits	6
@@ -889,7 +882,7 @@ Variable_name	Value
 Qcache_queries_in_cache	1
 show status like "Qcache_inserts";
 Variable_name	Value
-Qcache_inserts	20
+Qcache_inserts	19
 show status like "Qcache_hits";
 Variable_name	Value
 Qcache_hits	7
@@ -1858,17 +1851,17 @@ DROP TABLE t1;
 SET GLOBAL query_cache_size= default;
 CREATE TABLE t1( a INT );
 SET @v = ( SELECT SQL_CACHE    1 );
-ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '1 )' at line 1
+ERROR 42000: Incorrect usage/placement of 'SQL_CACHE'
 SET @v = ( SELECT SQL_NO_CACHE 1 );
-ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '1 )' at line 1
+ERROR 42000: Incorrect usage/placement of 'SQL_NO_CACHE'
 SELECT a FROM t1 WHERE a IN ( SELECT SQL_CACHE    a FROM t1 );
-ERROR 42S22: Unknown column 'SQL_CACHE' in 'field list'
+ERROR 42000: Incorrect usage/placement of 'SQL_CACHE'
 SELECT a FROM t1 WHERE a IN ( SELECT SQL_NO_CACHE a FROM t1 );
-ERROR 42S22: Unknown column 'SQL_NO_CACHE' in 'field list'
+ERROR 42000: Incorrect usage/placement of 'SQL_NO_CACHE'
 SELECT ( SELECT SQL_CACHE a FROM t1 );
-ERROR 42S22: Unknown column 'SQL_CACHE' in 'field list'
+ERROR 42000: Incorrect usage/placement of 'SQL_CACHE'
 SELECT ( SELECT SQL_NO_CACHE a FROM t1 );
-ERROR 42S22: Unknown column 'SQL_NO_CACHE' in 'field list'
+ERROR 42000: Incorrect usage/placement of 'SQL_NO_CACHE'
 SELECT SQL_CACHE * FROM t1;
 a
 SELECT SQL_NO_CACHE * FROM t1;
@@ -1878,18 +1871,18 @@ ERROR 42000: Incorrect usage/placement of 'SQL_CACHE'
 SELECT * FROM t1 UNION SELECT SQL_NO_CACHE * FROM t1;
 ERROR 42000: Incorrect usage/placement of 'SQL_NO_CACHE'
 SELECT * FROM t1 WHERE a IN (SELECT SQL_CACHE a FROM t1);
-ERROR 42S22: Unknown column 'SQL_CACHE' in 'field list'
+ERROR 42000: Incorrect usage/placement of 'SQL_CACHE'
 SELECT * FROM t1 WHERE a IN (SELECT a FROM t1 UNION SELECT SQL_CACHE a FROM t1);
-ERROR 42S22: Unknown column 'SQL_CACHE' in 'field list'
+ERROR 42000: Incorrect usage/placement of 'SQL_CACHE'
 SELECT * FROM t1 UNION SELECT SQL_NO_CACHE * FROM t1;
 ERROR 42000: Incorrect usage/placement of 'SQL_NO_CACHE'
 SELECT * FROM t1 WHERE a IN (SELECT SQL_NO_CACHE a FROM t1);
-ERROR 42S22: Unknown column 'SQL_NO_CACHE' in 'field list'
+ERROR 42000: Incorrect usage/placement of 'SQL_NO_CACHE'
 SELECT * FROM t1 WHERE a IN 
 (SELECT a FROM t1 UNION SELECT SQL_NO_CACHE a FROM t1);
-ERROR 42S22: Unknown column 'SQL_NO_CACHE' in 'field list'
+ERROR 42000: Incorrect usage/placement of 'SQL_NO_CACHE'
 SELECT SQL_CACHE SQL_NO_CACHE * FROM t1;
-ERROR HY000: Incorrect usage of SQL_CACHE and SQL_NO_CACHE
+ERROR HY000: Incorrect usage of SQL_NO_CACHE and SQL_CACHE
 SELECT SQL_NO_CACHE SQL_CACHE * FROM t1;
 ERROR HY000: Incorrect usage of SQL_NO_CACHE and SQL_CACHE
 SELECT SQL_CACHE * FROM t1 UNION SELECT SQL_CACHE * FROM t1;
@@ -1902,10 +1895,10 @@ SELECT SQL_NO_CACHE * FROM t1 UNION SELECT SQL_NO_CACHE * FROM t1;
 ERROR 42000: Incorrect usage/placement of 'SQL_NO_CACHE'
 SELECT SQL_CACHE * FROM t1 WHERE a IN 
 (SELECT SQL_NO_CACHE a FROM t1);
-ERROR 42S22: Unknown column 'SQL_NO_CACHE' in 'field list'
+ERROR 42000: Incorrect usage/placement of 'SQL_NO_CACHE'
 SELECT SQL_CACHE * FROM t1 WHERE a IN 
 (SELECT a FROM t1 UNION SELECT SQL_NO_CACHE a FROM t1);
-ERROR 42S22: Unknown column 'SQL_NO_CACHE' in 'field list'
+ERROR 42000: Incorrect usage/placement of 'SQL_NO_CACHE'
 DROP TABLE t1;
 End of 5.1 tests
 #

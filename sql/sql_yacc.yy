@@ -675,6 +675,8 @@ bool sp_create_assignment_instr(THD *thd, bool no_lookahead)
         return true;
     }
     lex->pop_select();
+    if (Lex->check_main_unit_semantics())
+      return true;
     enum_var_type inner_option_type= lex->option_type;
     if (lex->sphead->restore_lex(thd))
       return true;
@@ -2175,6 +2177,8 @@ prepare:
             if (lex->table_or_sp_used())
               my_yyabort_error((ER_SUBQUERIES_NOT_SUPPORTED, MYF(0),
                                "PREPARE..FROM"));
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
             lex->sql_command= SQLCOM_PREPARE;
             lex->prepared_stmt_name= $3;
             Lex->pop_select(); //main select
@@ -2202,6 +2206,8 @@ execute:
           execute_using
           {
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         | EXECUTE_SYM IMMEDIATE_SYM
           {
@@ -2218,6 +2224,8 @@ execute:
           execute_using
           {
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         ;
 
@@ -7423,6 +7431,8 @@ alter:
             lex->sql_command= SQLCOM_ALTER_PROCEDURE;
             lex->spname= $3;
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         | ALTER FUNCTION_SYM sp_name
           {
@@ -7441,6 +7451,8 @@ alter:
             lex->sql_command= SQLCOM_ALTER_FUNCTION;
             lex->spname= $3;
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         | ALTER view_algorithm definer_opt opt_view_suid VIEW_SYM table_ident
           {
@@ -7452,6 +7464,8 @@ alter:
           view_list_opt AS view_select
           {
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         | ALTER definer_opt opt_view_suid VIEW_SYM table_ident
           /*
@@ -7468,6 +7482,8 @@ alter:
           view_list_opt AS view_select
           {
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         | ALTER definer_opt remember_name EVENT_SYM sp_name
           {
@@ -7570,6 +7586,8 @@ alter:
             if (Lex->m_sql_cmd == NULL)
               MYSQL_YYABORT;
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         ;
 
@@ -12511,6 +12529,8 @@ do:
           {
             Lex->insert_list= $3;
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         ;
 
@@ -12741,6 +12761,8 @@ insert:
           insert_field_spec opt_insert_update
           {
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         ;
 
@@ -12763,6 +12785,8 @@ replace:
           insert_field_spec
           {
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         ;
 
@@ -12986,6 +13010,8 @@ update:
             if ($10)
               Select->order_list= *($10);
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         ;
 
@@ -13074,6 +13100,8 @@ single_multi:
             if (multi_delete_set_locks_and_link_aux_tables(Lex))
               MYSQL_YYABORT;
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         | FROM table_alias_ref_list
           {
@@ -13088,6 +13116,8 @@ single_multi:
             if (multi_delete_set_locks_and_link_aux_tables(Lex))
               MYSQL_YYABORT;
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         ;
 
@@ -13944,6 +13974,8 @@ purge_option:
             lex->value_list.empty();
             lex->value_list.push_front($2, thd->mem_root);
             lex->sql_command= SQLCOM_PURGE_BEFORE;
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         ;
 
@@ -14051,6 +14083,8 @@ load:
           opt_load_data_set_spec
           {
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
           ;
 
@@ -15372,6 +15406,8 @@ set:
           start_option_value_list
           {
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
         | SET STATEMENT_SYM
           {
@@ -15387,6 +15423,8 @@ set:
             lex->stmt_var_list= lex->var_list;
             lex->var_list.empty();
             Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
+              MYSQL_YYABORT;
           }
           FOR_SYM verb_clause
 	  {}
