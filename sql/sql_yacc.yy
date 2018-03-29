@@ -3611,10 +3611,16 @@ sp_hcond:
         ;
 
 signal_stmt:
-          SIGNAL_SYM signal_value opt_set_signal_information
+          SIGNAL_SYM
           {
-            if (Lex->add_signal_statement(thd, $2))
+            if (Lex->main_select_push())
+              YYABORT;
+          } 
+          signal_value opt_set_signal_information
+          {
+            if (Lex->add_signal_statement(thd, $3))
               MYSQL_YYABORT;
+            Lex->pop_select(); //main select
           }
         ;
 

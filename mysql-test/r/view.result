@@ -5963,7 +5963,7 @@ insert into t1 values (1),(2);
 CREATE VIEW v1 AS SELECT * FROM t1 FOR UPDATE;
 SHOW CREATE VIEW v1;
 View	Create View	character_set_client	collation_connection
-v1	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v1` AS select `t1`.`a` AS `a` from `t1` lock in share mode	latin1	latin1_swedish_ci
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v1` AS select `t1`.`a` AS `a` from `t1` for update	latin1	latin1_swedish_ci
 select * from v1;
 a
 1
@@ -5972,7 +5972,7 @@ DROP VIEW v1;
 CREATE VIEW v1 AS SELECT * FROM t1 LOCK IN SHARE MODE;
 SHOW CREATE VIEW v1;
 View	Create View	character_set_client	collation_connection
-v1	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v1` AS select `t1`.`a` AS `a` from `t1` lock in share mode	latin1	latin1_swedish_ci
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v1` AS select `t1`.`a` AS `a` from `t1` for update	latin1	latin1_swedish_ci
 select * from v1;
 a
 1
@@ -6516,7 +6516,7 @@ insert into t1 values (1),(2);
 CREATE VIEW v1 AS SELECT * FROM t1 FOR UPDATE;
 SHOW CREATE VIEW v1;
 View	Create View	character_set_client	collation_connection
-v1	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v1` AS select `t1`.`a` AS `a` from `t1` lock in share mode	latin1	latin1_swedish_ci
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v1` AS select `t1`.`a` AS `a` from `t1` for update	latin1	latin1_swedish_ci
 select * from v1;
 a
 1
@@ -6525,7 +6525,7 @@ DROP VIEW v1;
 CREATE VIEW v1 AS SELECT * FROM t1 LOCK IN SHARE MODE;
 SHOW CREATE VIEW v1;
 View	Create View	character_set_client	collation_connection
-v1	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v1` AS select `t1`.`a` AS `a` from `t1` lock in share mode	latin1	latin1_swedish_ci
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v1` AS select `t1`.`a` AS `a` from `t1` for update	latin1	latin1_swedish_ci
 select * from v1;
 a
 1
