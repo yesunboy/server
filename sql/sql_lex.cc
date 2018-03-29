@@ -5430,7 +5430,7 @@ bool LEX::push_context(Name_resolution_context *context)
 
 bool LEX::push_new_select(SELECT_LEX *last)
 {
-  DBUG_ENTER("LEX::push_select_new");
+  DBUG_ENTER("LEX::push new_select");
   DBUG_PRINT("info", ("Push last select: %p (%d)",
                        last, last->select_number));
   bool res= last_select_stack.push_front(last, thd->mem_root);
@@ -5438,8 +5438,20 @@ bool LEX::push_new_select(SELECT_LEX *last)
 }
 
 
+bool check_intersect_prefix(SELECT_LEX* first_in_unit)
+{
+  SELECT_LEX *sel;
+  for (sel= first_in_unit->next_select();
+       sel && sel->linkage == INTERSECT_TYPE;
+       sel= sel->next_select())
+    ;
+  return (sel == NULL);
+}
+
+
 SELECT_LEX *LEX::pop_new_select_and_wrap()
 {
+  DBUG_ENTER("LEX::pop_new_select_and_wrap");
   SELECT_LEX *sel;
   SELECT_LEX *last= pop_new_select();
   SELECT_LEX *first= last->next_select();
@@ -5447,10 +5459,10 @@ SELECT_LEX *LEX::pop_new_select_and_wrap()
   enum sub_select_type op= first->linkage;
   bool ds= first->distinct;
   if (!(sel= link_selects_chain_down(first)))
-      return NULL;
+      DBUG_RETURN(NULL);
   last->link_neighbour(sel);
   sel->set_linkage_and_distinct(op, ds);
-  return last;
+  DBUG_RETURN(last);
 }
 
 /**

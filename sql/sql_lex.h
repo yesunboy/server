@@ -81,6 +81,8 @@ inline int cmp_unit_op(enum sub_select_type op1, enum sub_select_type op2)
   return (op1 == INTERSECT_TYPE ? 1 : 0) - (op2 == INTERSECT_TYPE ? 1 : 0);
 }
 
+bool check_intersect_prefix(SELECT_LEX* first_in_unit);
+
 enum unit_common_op {OP_MIX, OP_UNION, OP_INTERSECT, OP_EXCEPT};
 
 enum enum_view_suid
@@ -3193,7 +3195,7 @@ public:
 
   SELECT_LEX *pop_new_select()
   {
-    DBUG_ENTER("LEX::pop_select_new");
+    DBUG_ENTER("LEX::pop_new_select");
     SELECT_LEX* last= last_select_stack.pop();
     DBUG_PRINT("info", ("Pop last elect: %p (%d)",
                          last, last->select_number));

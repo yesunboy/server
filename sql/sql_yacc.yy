@@ -8805,8 +8805,11 @@ query_primary_parens:
                                 last->linkage);
             if (cmp < 0)
             {
-              if (Lex->pop_new_select_and_wrap() == NULL)
-                MYSQL_YYABORT;
+              if (!check_intersect_prefix($2->first_select()))
+              {
+                if (Lex->pop_new_select_and_wrap() == NULL)
+                  MYSQL_YYABORT;
+              }
             }
             Lex->push_select($2->fake_select_lex);
           }
@@ -8924,9 +8927,12 @@ query_expression_unit:
             else /* cmp < 0 */
             {
               // wrap stored part in a select, then continue to connect parts
-              if ((last= Lex->pop_new_select_and_wrap()) == NULL)
-                MYSQL_YYABORT;
-              last->set_master_unit($$);
+              if (!check_intersect_prefix($1->first_select()))
+              {
+                if ((last= Lex->pop_new_select_and_wrap()) == NULL)
+                  MYSQL_YYABORT;
+                last->set_master_unit($$);
+              }
             }
             last->link_neighbour(sel1);
             sel1->set_master_unit($1);
@@ -8990,8 +8996,11 @@ query_expression_body:
                                 last->linkage);
             if (cmp < 0)
             {
-              if (Lex->pop_new_select_and_wrap() == NULL)
-                MYSQL_YYABORT;
+              if (!check_intersect_prefix($1->first_select()))
+              {
+                if (Lex->pop_new_select_and_wrap() == NULL)
+                  MYSQL_YYABORT;
+              }
             }
             Lex->push_select($1->fake_select_lex);
           }
