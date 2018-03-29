@@ -13433,7 +13433,12 @@ show_param:
             (void) create_select_for_variable(thd, &var);
           }
         | WARNINGS opt_limit_clause
-          { Lex->sql_command = SQLCOM_SHOW_WARNS;}
+          {
+            Lex->sql_command = SQLCOM_SHOW_WARNS;
+            Select->explicit_limit= $2.explicit_limit;
+            Select->select_limit= $2.select_limit;
+            Select->offset_limit= $2.offset_limit;
+          }
         | ERRORS opt_limit_clause
           { Lex->sql_command = SQLCOM_SHOW_ERRORS;}
         | PROFILES_SYM
