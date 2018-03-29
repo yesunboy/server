@@ -1586,8 +1586,8 @@ bool mysql_make_view(THD *thd, TABLE_SHARE *share, TABLE_LIST *table,
     old_lex->safe_to_cache_query= (old_lex->safe_to_cache_query &&
 				   lex->safe_to_cache_query);
     /* move SQL_CACHE to whole query */
-    if (lex->builtin_select.options & OPTION_TO_QUERY_CACHE)
-      old_lex->builtin_select.options|= OPTION_TO_QUERY_CACHE;
+    if (lex->first_select_lex()->options & OPTION_TO_QUERY_CACHE)
+      old_lex->first_select_lex()->options|= OPTION_TO_QUERY_CACHE;
 
 #ifndef NO_EMBEDDED_ACCESS_CHECKS
     if (table->view_suid)

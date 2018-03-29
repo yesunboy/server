@@ -7566,7 +7566,6 @@ bool st_select_lex::check_parameters(SELECT_LEX *main_select)
       DBUG_RETURN(TRUE);
     }
     parent_lex->safe_to_cache_query=0;
-    main_select->options&= ~OPTION_NO_QUERY_CACHE;
     main_select->sql_cache= SELECT_LEX::SQL_NO_CACHE;
   }
   if (options & OPTION_TO_QUERY_CACHE)
@@ -7586,7 +7585,6 @@ bool st_select_lex::check_parameters(SELECT_LEX *main_select)
       DBUG_RETURN(TRUE);
     }
     parent_lex->safe_to_cache_query=1;
-    main_select->options|= OPTION_TO_QUERY_CACHE;
     main_select->sql_cache= SELECT_LEX::SQL_CACHE;
   }
 
