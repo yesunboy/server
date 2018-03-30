@@ -3746,9 +3746,14 @@ resignal_stmt:
         ;
 
 get_diagnostics:
-          GET_SYM which_area DIAGNOSTICS_SYM diagnostics_information
+          GET_SYM which_area DIAGNOSTICS_SYM
           {
-            Diagnostics_information *info= $4;
+            if (Lex->main_select_push())
+              YYABORT;
+          }
+          diagnostics_information
+          {
+            Diagnostics_information *info= $5;
 
             info->set_which_da($2);
 
@@ -3757,6 +3762,7 @@ get_diagnostics:
 
             if (Lex->m_sql_cmd == NULL)
               MYSQL_YYABORT;
+            Lex->pop_select(); //main select
           }
         ;
 
