@@ -8921,7 +8921,7 @@ query_expression_unit:
             else if (cmp > 0)
             {
               // Store beginning and continue to connect parts
-              if (Lex->push_new_select(last))
+              if (Lex->push_new_select($1->pre_last_parse))
                 MYSQL_YYABORT;
             }
             else /* cmp < 0 */
@@ -8931,7 +8931,7 @@ query_expression_unit:
               {
                 if ((last= Lex->pop_new_select_and_wrap()) == NULL)
                   MYSQL_YYABORT;
-                last->set_master_unit($$);
+                last->set_master_unit($1);
               }
             }
             last->link_neighbour(sel1);

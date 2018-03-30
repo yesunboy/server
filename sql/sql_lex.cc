@@ -5462,7 +5462,7 @@ SELECT_LEX *LEX::pop_new_select_and_wrap()
       DBUG_RETURN(NULL);
   last->link_neighbour(sel);
   sel->set_linkage_and_distinct(op, ds);
-  DBUG_RETURN(last);
+  DBUG_RETURN(sel);
 }
 
 /**
