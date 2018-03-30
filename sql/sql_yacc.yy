@@ -14005,6 +14005,8 @@ kill:
           KILL_SYM
           {
             LEX *lex=Lex;
+            if (Lex->main_select_push())
+              YYABORT;
             lex->value_list.empty();
             lex->users_list.empty();
             lex->sql_command= SQLCOM_KILL;
@@ -14013,6 +14015,7 @@ kill:
           kill_type kill_option kill_expr
           {
             Lex->kill_signal= (killed_state) ($3 | $4);
+            Lex->pop_select(); //main select
           }
         ;
 
