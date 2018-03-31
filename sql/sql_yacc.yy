@@ -9135,7 +9135,7 @@ select_lock_type:
           {
             $$= $5;
             $$.defined_lock= TRUE;
-            $$.update_lock= TRUE;
+            $$.update_lock= FALSE;
           }
         ;
 
@@ -13799,12 +13799,16 @@ flush:
           FLUSH_SYM opt_no_write_to_binlog
           {
             LEX *lex=Lex;
+            if (lex->main_select_push())
+              YYABORT;
             lex->sql_command= SQLCOM_FLUSH;
             lex->type= 0;
             lex->no_write_to_binlog= $2;
           }
           flush_options
-          {}
+          {
+            Lex->pop_select();  //main select
+          }
         ;
 
 flush_options:
@@ -14011,7 +14015,7 @@ kill:
           KILL_SYM
           {
             LEX *lex=Lex;
-            if (Lex->main_select_push())
+            if (lex->main_select_push())
               YYABORT;
             lex->value_list.empty();
             lex->users_list.empty();
