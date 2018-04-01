@@ -3569,6 +3569,8 @@ void LEX::fix_first_select_number()
     {
       if (sel->select_number < num)
         sel->select_number++;
+      if (sel->select_number > num)
+        sel->select_number--;
     }
     first->select_number= 1;
   }
