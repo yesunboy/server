@@ -7976,5 +7976,13 @@ bool LEX::insert_select_hack(SELECT_LEX *sel)
   builtin_select.context= sel->context;
   change_item_list_context(&field_list, &sel->context);
 
+  for (SELECT_LEX *sel= all_selects_list;
+       sel;
+       sel= sel->next_select_in_list())
+  {
+    if (sel->select_number != 1)
+      sel->select_number--;
+  };
+
   DBUG_RETURN(FALSE);
 }
