@@ -8359,6 +8359,8 @@ analyze:
           ANALYZE_SYM opt_no_write_to_binlog table_or_tables
           {
             LEX *lex=Lex;
+            if (lex->main_select_push())
+              YYABORT;
             lex->sql_command = SQLCOM_ANALYZE;
             lex->no_write_to_binlog= $2;
             lex->check_opt.init();
@@ -8373,6 +8375,7 @@ analyze:
             lex->m_sql_cmd= new (thd->mem_root) Sql_cmd_analyze_table();
             if (lex->m_sql_cmd == NULL)
               MYSQL_YYABORT;
+            Lex->pop_select(); //main select
           }
         ;
 
