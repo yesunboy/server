@@ -16758,14 +16758,22 @@ view_select:
           query_expression
           view_check_option
           {
-            SQL_I_List<TABLE_LIST> *save= &Lex->first_select_lex()->table_list;
-            Lex->set_main_unit($2);
-            if (Lex->check_main_unit_semantics())
+            LEX *lex= Lex; 
+            SQL_I_List<TABLE_LIST> *save= &lex->first_select_lex()->table_list;
+            lex->set_main_unit($2);
+            if (lex->check_main_unit_semantics())
               MYSQL_YYABORT;
-            Lex->first_select_lex()->table_list.push_front(save);
-            Lex->current_select= Lex->first_select_lex();
-            Lex->create_view->check= $3;
-            Lex->parsing_options.allows_variable= TRUE;
+            lex->first_select_lex()->table_list.push_front(save);
+            lex->current_select= Lex->first_select_lex();
+            size_t len= YYLIP->get_cpp_ptr() - lex->create_view->select.str;
+            void *create_view_select= thd->memdup(lex->create_view->select.str, len);
+            lex->create_view->select.length= len;
+            lex->create_view->select.str= (char *) create_view_select;
+            uint not_used;
+            trim_whitespace(thd->charset(),
+                            &lex->create_view->select, &not_used);
+            lex->create_view->check= $3;
+            lex->parsing_options.allows_variable= TRUE;
           }
         ;
 
