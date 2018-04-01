@@ -8765,11 +8765,8 @@ query_specification:
           {
             SELECT_LEX *sel;
             LEX *lex= Lex;
-            if (lex->current_select &&
-                lex->current_select->parsing_place == BEFORE_OPT_FIELD_LIST)
-              lex->current_select->parsing_place= NO_MATTER;
-            if (!(sel= Lex->alloc_select(TRUE)) ||
-                  Lex->push_select(sel))
+            if (!(sel= lex->alloc_select(TRUE)) ||
+                  lex->push_select(sel))
               MYSQL_YYABORT;
             sel->init_select();
             sel->braces= FALSE;

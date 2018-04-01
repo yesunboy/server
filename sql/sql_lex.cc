@@ -1367,6 +1367,7 @@ int MYSQLlex(YYSTYPE *yylval, THD *thd)
     }
     break;
   case PARTITION_SYM:
+  case SELECT_SYM:
   case UNION_SYM:
     if (thd->lex->current_select && 
         thd->lex->current_select->parsing_place == BEFORE_OPT_FIELD_LIST)
