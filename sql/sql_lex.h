@@ -3629,6 +3629,11 @@ public:
   {
     size_t pos= start - substatement_query(thd);
     size_t len= end - start;
+    if (!substatement_query(thd))
+    {
+      pos= 0;
+      len= 0;
+    }
     DBUG_ASSERT(pos < UINT_MAX32);
     DBUG_ASSERT(len < UINT_MAX32);
     return add_placeholder(thd, name, (uint) pos, (uint) len);
