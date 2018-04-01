@@ -12151,6 +12151,14 @@ limit_clause:
           }
         ;
 
+opt_global_limit_clause:
+          opt_limit_clause
+          {
+            Select->explicit_limit= $1.explicit_limit;
+            Select->select_limit= $1.select_limit;
+            Select->offset_limit= $1.offset_limit;
+          }
+
 limit_options:
           limit_option
           {
@@ -13400,12 +13408,13 @@ show_param:
             LEX *lex= Lex;
             lex->sql_command= SQLCOM_SHOW_BINLOG_EVENTS;
           }
-          opt_limit_clause
+          opt_global_limit_clause
         | RELAYLOG_SYM optional_connection_name EVENTS_SYM binlog_in binlog_from
           {
             LEX *lex= Lex;
             lex->sql_command= SQLCOM_SHOW_RELAYLOG_EVENTS;
-          } opt_limit_clause
+          } 
+          opt_global_limit_clause
         | keys_or_index from_or_in table_ident opt_db opt_where_clause
           {
             LEX *lex= Lex;
@@ -13447,18 +13456,17 @@ show_param:
             LEX_CSTRING var= {STRING_WITH_LEN("error_count")};
             (void) create_select_for_variable(thd, &var);
           }
-        | WARNINGS opt_limit_clause
+        | WARNINGS opt_global_limit_clause
           {
             Lex->sql_command = SQLCOM_SHOW_WARNS;
-            Select->explicit_limit= $2.explicit_limit;
-            Select->select_limit= $2.select_limit;
-            Select->offset_limit= $2.offset_limit;
           }
-        | ERRORS opt_limit_clause
-          { Lex->sql_command = SQLCOM_SHOW_ERRORS;}
+        | ERRORS opt_global_limit_clause
+          { 
+            Lex->sql_command = SQLCOM_SHOW_ERRORS;
+          }
         | PROFILES_SYM
           { Lex->sql_command = SQLCOM_SHOW_PROFILES; }
-        | PROFILE_SYM opt_profile_defs opt_profile_args opt_limit_clause
+        | PROFILE_SYM opt_profile_defs opt_profile_args opt_global_limit_clause
           { 
             LEX *lex= Lex;
             lex->sql_command= SQLCOM_SHOW_PROFILE;
@@ -13799,16 +13807,11 @@ flush:
           FLUSH_SYM opt_no_write_to_binlog
           {
             LEX *lex=Lex;
-            if (lex->main_select_push())
-              YYABORT;
             lex->sql_command= SQLCOM_FLUSH;
             lex->type= 0;
             lex->no_write_to_binlog= $2;
           }
           flush_options
-          {
-            Lex->pop_select();  //main select
-          }
         ;
 
 flush_options:
@@ -15950,25 +15953,36 @@ unlock:
 */
 
 handler:
-          HANDLER_SYM table_ident OPEN_SYM opt_table_alias_clause
+          HANDLER_SYM 
+          {
+            if (Lex->main_select_push())
+              MYSQL_YYABORT;
+          }
+          handler_tail
+          {
+            Lex->pop_select(); //main select
+          }
+
+handler_tail:
+          table_ident OPEN_SYM opt_table_alias_clause
           {
             LEX *lex= Lex;
             if (lex->sphead)
               my_yyabort_error((ER_SP_BADSTATEMENT, MYF(0), "HANDLER"));
             lex->sql_command = SQLCOM_HA_OPEN;
-            if (!lex->current_select->add_table_to_list(thd, $2, $4, 0))
+            if (!lex->current_select->add_table_to_list(thd, $1, $3, 0))
               MYSQL_YYABORT;
           }
-        | HANDLER_SYM table_ident_nodb CLOSE_SYM
+        | table_ident_nodb CLOSE_SYM
           {
             LEX *lex= Lex;
             if (lex->sphead)
               my_yyabort_error((ER_SP_BADSTATEMENT, MYF(0), "HANDLER"));
             lex->sql_command = SQLCOM_HA_CLOSE;
-            if (!lex->current_select->add_table_to_list(thd, $2, 0, 0))
+            if (!lex->current_select->add_table_to_list(thd, $1, 0, 0))
               MYSQL_YYABORT;
           }
-        | HANDLER_SYM table_ident_nodb READ_SYM
+        | table_ident_nodb READ_SYM
           {
             LEX *lex=Lex;
             if (lex->sphead)
@@ -15976,20 +15990,24 @@ handler:
             lex->expr_allows_subselect= FALSE;
             lex->sql_command = SQLCOM_HA_READ;
             lex->ha_rkey_mode= HA_READ_KEY_EXACT; /* Avoid purify warnings */
-            Item *one= new (thd->mem_root) Item_int(thd, (int32) 1);
-            if (one == NULL)
-              MYSQL_YYABORT;
-            lex->current_select->select_limit= one;
-            lex->current_select->offset_limit= 0;
-            lex->limit_rows_examined= 0;
-            if (!lex->current_select->add_table_to_list(thd, $2, 0, 0))
+            if (!lex->current_select->add_table_to_list(thd, $1, 0, 0))
               MYSQL_YYABORT;
           }
-          handler_read_or_scan opt_where_clause opt_limit_clause
+          handler_read_or_scan opt_where_clause opt_global_limit_clause
           {
-            Lex->expr_allows_subselect= TRUE;
+            LEX *lex=Lex;
+            lex->expr_allows_subselect= TRUE;
+            if (!lex->current_select->explicit_limit)
+            {
+              Item *one= new (thd->mem_root) Item_int(thd, (int32) 1);
+              if (one == NULL)
+                MYSQL_YYABORT;
+              lex->current_select->select_limit= one;
+              lex->current_select->offset_limit= 0;
+              lex->limit_rows_examined= 0;
+            }
             /* Stored functions are not supported for HANDLER READ. */
-            if (Lex->uses_stored_routines())
+            if (lex->uses_stored_routines())
             {
               my_error(ER_NOT_SUPPORTED_YET, MYF(0),
                        "stored functions in HANDLER ... READ");
