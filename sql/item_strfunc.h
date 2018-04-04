@@ -1761,6 +1761,7 @@ public:
   void fix_length_and_dec();
   Item *get_copy(THD *thd)
   { return get_item_copy<Item_temptable_rowid>(thd, this); }
+  TABLE *rowid_table() const { return table; }
 };
 
 #endif /* ITEM_STRFUNC_INCLUDED */

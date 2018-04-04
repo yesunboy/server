@@ -2195,7 +2195,38 @@ loop_end:
       DBUG_RETURN(1);
     tmp_tables[cnt]->file->extra(HA_EXTRA_WRITE_CACHE);
   }
+  join->tmp_table_keep_current_rowid= TRUE;
   DBUG_RETURN(0);
+}
+
+
+
+int multi_update::prepare2(JOIN *join)
+{
+  if (!join->need_tmp || !join->tmp_table_keep_current_rowid)
+    return 0;
+
+  // there cannot be many tmp tables in multi-update
+  JOIN_TAB *tmptab= join->join_tab + join->exec_join_tab_cnt();
+
+  for (Item **it= tmptab->tmp_table_param->items_to_copy; *it ; it++)
+  {
+    TABLE *tbl= (*it)->rowid_table();
+    if (!tbl)
+      continue;
+    for (uint i= 0; i < table_count; i++)
+    {
+      for (Item **it2= tmp_table_param[i].items_to_copy; *it2; it2++)
+      {
+        if ((*it2)->rowid_table() != tbl)
+          continue;
+        *it2= new (thd->mem_root) Item_field(thd, (*it)->get_tmp_table_field());
+        if (!*it2)
+          return 1;
+      }
+    }
+  }
+  return 0;
 }
 
 

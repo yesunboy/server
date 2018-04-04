@@ -2023,6 +2023,7 @@ public:
   {
     marker &= ~EXTRACTION_MASK;
   }
+  virtual TABLE *rowid_table() const { return 0; }
 };
 
 MEM_ROOT *get_thd_memroot(THD *thd);

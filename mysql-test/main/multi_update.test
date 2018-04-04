@@ -914,3 +914,14 @@ update t1 set c1=NULL;
 update t1, t2 set t1.c1=t2.c3 where t1.c3=t2.c3 order by t1.c3 desc limit 2;
 select * from t1;
 drop table t1, t2;
+
+#
+# MDEV-14551 Can't find record in table on multi-table update with ORDER BY
+#
+CREATE TABLE t1 (i INT) ENGINE=MEMORY;
+INSERT t1 VALUES (1),(2);
+CREATE TABLE t2 (f INT) ENGINE=MyISAM;
+INSERT t2 VALUES (1),(2);
+UPDATE t1, t2 SET f = 126 ORDER BY f LIMIT 2;
+SELECT * FROM t2;
+DROP TABLE t1, t2;
