@@ -254,6 +254,10 @@ struct os_aio_array_struct{
 				possible pending IO. The size of the
 				array is equal to n_slots. */
 #endif
+
+#ifdef WIN_ASYNC_IO
+	HANDLE completion_port;
+#endif
 };
 
 #if defined(LINUX_NATIVE_AIO)
@@ -345,8 +349,6 @@ os_aio_validate_skip(void)
 #ifdef _WIN32
 /** IO completion port used by background io threads */
 static HANDLE completion_port;
-/** IO completion port used by background io READ threads */
-static HANDLE read_completion_port;
 /** Thread local storage index for the per-thread event used for synchronous IO */
 static DWORD tls_sync_io = TLS_OUT_OF_INDEXES;
 #endif
@@ -1677,6 +1679,7 @@ try_again:
 	} else {
 		*success = TRUE;
 		if (srv_use_native_aio && ((attributes & FILE_FLAG_OVERLAPPED) != 0)) {
+			ut_a(completion_port);
 			ut_a(CreateIoCompletionPort(file, completion_port, 0, 0));
 		}
 	}
@@ -3617,6 +3620,13 @@ os_aio_array_create(
 
 skip_native_aio:
 #endif /* LINUX_NATIVE_AIO */
+
+#ifdef WIN_ASYNC_IO
+	array->completion_port = 
+		CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
+	ut_a(array->completion_port);
+#endif
+
 	for (i = 0; i < n; i++) {
 		slot = os_aio_array_get_nth_slot(array, i);
 		slot->pos = i;
@@ -3650,6 +3660,10 @@ os_aio_array_free(
 		ut_free(array->aio_ctx);
 	}
 #endif /* LINUX_NATIVE_AIO */
+
+#if defined(WIN_ASYNC_AIO)
+	CloseHandle(array->completion_port);
+#endif
 
 	ut_free(array->slots);
 	ut_free(array);
@@ -3731,6 +3745,10 @@ os_aio_init(
 		goto err_exit;
 	}
 
+#if defined(_WIN32)
+	completion_port = os_aio_write_array->completion_port;
+#endif
+
 	for (i = 2 + n_read_segs; i < n_segments; i++) {
 		ut_a(i < SRV_MAX_N_IO_THREADS);
 		srv_io_thread_function[i] = "write thread";
@@ -3753,13 +3771,6 @@ os_aio_init(
 	}
 
 	os_last_printout = time(NULL);
-
-#ifdef _WIN32
-	ut_a(completion_port == 0 && read_completion_port == 0);
-	completion_port = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
-	read_completion_port = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
-	ut_a(completion_port && read_completion_port);
-#endif
 
 	return(TRUE);
 
@@ -3796,7 +3807,6 @@ os_aio_free(void)
 	os_aio_n_segments = 0;
 #ifdef _WIN32
 	completion_port = 0;
-	read_completion_port = 0;
 #endif
 }
 
@@ -3810,10 +3820,9 @@ os_aio_array_wake_win_aio_at_shutdown(
 /*==================================*/
 	os_aio_array_t*	array)	/*!< in: aio array */
 {
-	if(completion_port)
+	if(array->completion_port)
 	{
-		PostQueuedCompletionStatus(completion_port, 0, IOCP_SHUTDOWN_KEY, NULL);
-		PostQueuedCompletionStatus(read_completion_port, 0, IOCP_SHUTDOWN_KEY, NULL);
+		PostQueuedCompletionStatus(array->completion_port, 0, IOCP_SHUTDOWN_KEY, NULL);
 	}
 }
 #endif
@@ -4528,9 +4537,14 @@ os_aio_windows_handle(
 	DWORD		len;
 	BOOL		retry		= FALSE;
 	ULONG_PTR key;
-	HANDLE port = READ_SEGMENT(segment)? read_completion_port : completion_port;
+	os_aio_array_t *my_arr;
+	HANDLE port;
+
+	os_aio_get_array_and_local_segment(&my_arr, segment);
+	port = my_arr->completion_port;
 
 	for(;;) {
+		HANDLE slot_port;
 		ret = GetQueuedCompletionStatus(port, &len, &key, 
 			(OVERLAPPED **)&slot, INFINITE);
 
@@ -4544,7 +4558,8 @@ os_aio_windows_handle(
 			os_thread_exit(NULL);
 		}
 
-		if(WRITE_SEGMENT(segment)&& slot->type == OS_FILE_READ) {
+		slot_port = ((os_aio_array_t *)slot->arr)->completion_port;
+		if(port != slot_port) {
 			/*
 			Redirect read completions  to the dedicated completion port 
 			and thread. We need to split read and write threads. If we do not
@@ -4561,7 +4576,7 @@ os_aio_windows_handle(
 			Forwarding IO completion this way costs a context switch , and this 
 			seems tolerable  since asynchronous reads are by far less frequent.
 			*/
-			ut_a(PostQueuedCompletionStatus(read_completion_port, len, key,
+			ut_a(PostQueuedCompletionStatus(slot_port, len, key,
 				&slot->control));
 		}
 		else {
