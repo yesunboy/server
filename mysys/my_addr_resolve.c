@@ -184,18 +184,36 @@ int my_addr_resolve(void *ptr, my_addr_loc *loc)
   char input[32], *s;
   size_t len;
 
+  ssize_t bytes_written;
   Dl_info info;
   void *offset;
+
+  const char *binary_name;
 
   if (!dladdr(ptr, &info))
     return 1;
 
   if (strcmp(addr2line_binary, info.dli_fname))
   {
+    /* Check if we have an absolute or relative path. If there's no sign of a
+       path in the dli_fname string, we are looking at a binary started using
+       a PATH variable lookup. This only happens for the base binary file. */
+    binary_name= info.dli_fname;
+    if (!strchr(binary_name, '/'))
+    {
+      /* Temporarily reuse "output" array to store the full path.
+         If this call fails, we will just use info.dli_fname. */
+      bytes_written= readlink("/proc/self/exe", output, sizeof(output) - 1);
+      if (bytes_written >= 0)
+      {
+        output[bytes_written] = '\0';
+        binary_name= output;
+      }
+    }
     /* We use dli_fname in case the path is longer than the length of our static
        string. We don't want to allocate anything dynamicaly here as we are in
        a "crashed" state. */
-    if (start_addr2line_fork(info.dli_fname))
+    if (start_addr2line_fork(binary_name))
     {
       addr2line_binary[0] = '\0';
       return 1;
