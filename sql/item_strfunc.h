@@ -1748,5 +1748,19 @@ public:
   { return get_item_copy<Item_func_dyncol_list>(thd, this); }
 };
 
-#endif /* ITEM_STRFUNC_INCLUDED */
+class Item_temptable_rowid :public Item_str_func
+{
+  TABLE *table;
+public:
+  Item_temptable_rowid(TABLE *table_arg);
+  const Type_handler *type_handler() const { return &type_handler_string; }
+  Field *create_tmp_field(bool group, TABLE *table)
+  { return create_table_field_from_handler(table); }
+  String *val_str(String *str);
+  const char *func_name() const { return "<rowid>"; }
+  void fix_length_and_dec();
+  Item *get_copy(THD *thd)
+  { return get_item_copy<Item_temptable_rowid>(thd, this); }
+};
 
+#endif /* ITEM_STRFUNC_INCLUDED */
