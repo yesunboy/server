@@ -530,6 +530,15 @@ class Time_zone;
 
 #define THD_CHECK_SENTRY(thd) DBUG_ASSERT(thd->dbug_sentry == THD_SENTRY_MAGIC)
 
+enum old_alter_modes
+{
+  DEFAULT_ALGO,
+  COPY_ALGO,
+  INPLACE_ALGO,
+  NOCOPY_ALGO,
+  INSTANT_ALGO
+};
+
 typedef struct system_variables
 {
   /*
@@ -655,7 +664,7 @@ typedef struct system_variables
   my_bool keep_files_on_create;
 
   my_bool old_mode;
-  my_bool old_alter_table;
+  ulong   alter_algorithm;
   my_bool old_passwords;
   my_bool big_tables;
   my_bool only_standard_compliant_cte;
